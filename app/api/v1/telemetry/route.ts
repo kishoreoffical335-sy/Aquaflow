@@ -135,9 +135,8 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertErr) {
-      console.error("Telemetry insert error:", insertErr);
       return NextResponse.json(
-        { success: false, error: "Database error storing reading", details: insertErr.message },
+        { success: false, error: "Database error storing reading" },
         { status: 500 }
       );
     }
@@ -221,9 +220,8 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err: any) {
-    console.error("Telemetry handler exception:", err);
     return NextResponse.json(
-      { success: false, error: "Internal Server Error", details: err.message },
+      { success: false, error: "Internal Server Error" },
       { status: 500 }
     );
   }

@@ -8,8 +8,13 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co";
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // If Supabase is not configured yet, continue without modifying session
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return response;
+  }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -37,10 +42,7 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Only refresh session if Supabase is actually configured
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")) {
-    await supabase.auth.getUser();
-  }
+  await supabase.auth.getUser();
 
   return response;
 }
