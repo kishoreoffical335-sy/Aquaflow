@@ -23,7 +23,7 @@ export default function DevicesPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState("");
-  const [newDeviceUid, setNewDeviceUid] = useState("ESP32-NODE-01");
+  const [newDeviceId, setNewDeviceId] = useState("PROD-NODE-01");
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -54,7 +54,8 @@ export default function DevicesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           device_name: newDeviceName,
-          device_uid: newDeviceUid,
+          device_id: newDeviceId,
+          device_uid: newDeviceId,
         }),
       });
       if (res.ok) {
@@ -112,7 +113,7 @@ export default function DevicesPage() {
             <h3 className="text-sm font-semibold">Device Secret Generated</h3>
           </div>
           <p className="text-xs text-neutral-300 mb-4">
-            Copy this API Key now. For security, it is stored as a SHA-256 hash and cannot be viewed again.
+            Copy this API Key now and paste into <code>firmware/esp32_water_monitor/esp32_water_monitor.ino</code> as <code>DEVICE_API_KEY</code>. For security, it is stored as a SHA-256 hash and cannot be viewed again.
           </p>
           <div className="flex items-center gap-2 p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-emerald-300">
             <span className="flex-1 select-all break-all">{generatedKey}</span>
@@ -150,7 +151,7 @@ export default function DevicesPage() {
                   type="text"
                   value={newDeviceName}
                   onChange={(e) => setNewDeviceName(e.target.value)}
-                  placeholder="Main Water Tank Monitor"
+                  placeholder="Main Water Prototype Node"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-400"
                   required
                 />
@@ -158,13 +159,13 @@ export default function DevicesPage() {
 
               <div>
                 <label className="block text-xs font-medium text-neutral-300 mb-1.5">
-                  Device UID (Identifier)
+                  Device ID (Identifier)
                 </label>
                 <input
                   type="text"
-                  value={newDeviceUid}
-                  onChange={(e) => setNewDeviceUid(e.target.value)}
-                  placeholder="ESP32-NODE-01"
+                  value={newDeviceId}
+                  onChange={(e) => setNewDeviceId(e.target.value)}
+                  placeholder="PROD-NODE-01"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-cyan-400"
                   required
                 />
@@ -202,7 +203,6 @@ export default function DevicesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {devices.map((device: any) => {
             const { relative } = formatDateTime(device.last_seen_at);
-            const isOnline = device.status === "online";
 
             return (
               <Card key={device.id} className="p-6 flex flex-col justify-between">
@@ -214,7 +214,7 @@ export default function DevicesPage() {
                       </div>
                       <div>
                         <h3 className="text-sm font-semibold text-white">{device.device_name}</h3>
-                        <span className="text-[11px] font-mono text-cyan-400">{device.device_uid}</span>
+                        <span className="text-[11px] font-mono text-cyan-400">{device.device_id || device.device_uid}</span>
                       </div>
                     </div>
                     <RealtimeStatusBadge
@@ -241,7 +241,7 @@ export default function DevicesPage() {
 
                 <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                   <a href="/dashboard/hardware" className="text-xs text-cyan-400 hover:underline">
-                    View Flash Sketch &rarr;
+                    View Hardware Pin Mapping &rarr;
                   </a>
                 </div>
               </Card>

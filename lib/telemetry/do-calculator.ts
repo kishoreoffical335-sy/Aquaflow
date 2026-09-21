@@ -16,13 +16,20 @@ export interface DOCalculationConfig {
  */
 export function calculateDissolvedOxygen(
   inputs: {
-    ph: number;
-    turbidity: number;
-    flow_rate: number;
+    ph?: number | null;
+    turbidity?: number | null;
+    turbidity_raw?: number | null;
+    turbidity_ntu?: number | null;
+    flow_rate?: number | null;
+    flow_lpm?: number | null;
   },
   config: DOCalculationConfig = { enabled: false, model: "NONE" }
 ): DOCalculationResult {
   const calculatedAt = new Date().toISOString();
+  const phVal = inputs.ph ?? null;
+  const turbNtu = inputs.turbidity_ntu ?? inputs.turbidity ?? null;
+  const turbRaw = inputs.turbidity_raw ?? null;
+  const flowLpm = inputs.flow_lpm ?? inputs.flow_rate ?? null;
 
   // If calculation model is disabled or not configured
   if (!config.enabled || config.model === "NONE") {
@@ -33,9 +40,10 @@ export function calculateDissolvedOxygen(
       model: "NONE",
       reason: "Dissolved oxygen calculation unavailable with current sensor inputs (requires configured temperature/dissolved gas model).",
       inputsUsed: {
-        ph: inputs.ph,
-        turbidity: inputs.turbidity,
-        flow_rate: inputs.flow_rate,
+        ph: phVal,
+        turbidity_raw: turbRaw,
+        turbidity_ntu: turbNtu,
+        flow_lpm: flowLpm,
       },
       calculatedAt,
     };
@@ -48,10 +56,12 @@ export function calculateDissolvedOxygen(
     const saturationDO = 14.652 - 0.41022 * temp + 0.007991 * Math.pow(temp, 2) - 0.000077774 * Math.pow(temp, 3);
     
     // Aeration factor based on water velocity/flow agitation (min 0.6, max 1.0)
-    const aerationFactor = Math.min(1.0, 0.6 + (inputs.flow_rate > 0 ? Math.log10(1 + inputs.flow_rate) * 0.15 : 0));
+    const flowVal = flowLpm ?? 0;
+    const aerationFactor = Math.min(1.0, 0.6 + (flowVal > 0 ? Math.log10(1 + flowVal) * 0.15 : 0));
     
     // Slight deficit penalty for suspended solids / turbidity
-    const turbidityPenalty = Math.max(0, Math.min(1.5, (inputs.turbidity / 100) * 0.2));
+    const turbVal = turbNtu ?? 0;
+    const turbidityPenalty = Math.max(0, Math.min(1.5, (turbVal / 100) * 0.2));
     
     const calculatedValue = Math.max(0, Number(((saturationDO * aerationFactor) - turbidityPenalty).toFixed(2)));
 
@@ -61,9 +71,10 @@ export function calculateDissolvedOxygen(
       unit: "mg/L",
       model: "FLOW_AERATION_EMPIRICAL_V1",
       inputsUsed: {
-        ph: inputs.ph,
-        turbidity: inputs.turbidity,
-        flow_rate: inputs.flow_rate,
+        ph: phVal,
+        turbidity_raw: turbRaw,
+        turbidity_ntu: turbNtu,
+        flow_lpm: flowLpm,
         temperature_assumed: temp,
       },
       calculatedAt,
@@ -76,7 +87,12 @@ export function calculateDissolvedOxygen(
     unit: "mg/L",
     model: config.model,
     reason: "Configured DO model unsupported or missing critical physical coefficients.",
-    inputsUsed: { ph: inputs.ph, turbidity: inputs.turbidity, flow_rate: inputs.flow_rate },
+    inputsUsed: {
+      ph: phVal,
+      turbidity_raw: turbRaw,
+      turbidity_ntu: turbNtu,
+      flow_lpm: flowLpm,
+    },
     calculatedAt,
   };
 }

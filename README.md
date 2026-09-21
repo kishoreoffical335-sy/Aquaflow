@@ -1,135 +1,53 @@
-# AquaFlow ? IoT Water Quality & Flow Monitoring System
+# AquaFlow — Real-Time IoT Water Quality & Flow Monitoring System
 
-AquaFlow is a production-ready, environmental IoT telemetry web platform designed to ingest, validate, analyze, and visualize real-time water measurements from physical ESP32 microcontrollers. It features an **iOS 26-inspired Liquid Glass interface** floating above a dynamic, multi-layered water atmosphere with strict **zero-demo-data integrity**.
-
----
-
-## Key System Architecture & Principles
-
-1. **Strict Data Integrity (Zero Fabricated Readings)**:
-   - All charts, cards, statistics, and history tables display clean, high-fidelity Liquid Glass empty states until authentic physical ESP32 telemetry packets arrive.
-2. **Physical Sensor Matrix**:
-   - **pH Probe**: `0.00 ? 14.00 pH` (`MEASURED`)
-   - **Optical Turbidity Sensor**: `0 ? 4000 NTU` (`MEASURED`)
-   - **Hall-Effect Flow Meter**: `L/min` velocity (`MEASURED`)
-   - **Total Accumulated Volume**: `Liters` derived from flow pulse integration (`DERIVED`)
-   - **Dissolved Oxygen (DO)**: Calculated exclusively when calibrated calculation models and input parameters are available (`CALCULATED`). Displays *"Dissolved oxygen calculation unavailable with current sensor inputs"* when physical prerequisites are unmet.
-   - *No TDS or Temperature sensors are rendered.*
-3. **Liquid Glass UI & Scroll-Driven Storytelling**:
-   - Multi-layer specular highlights, frosted glass blur, floating capsule header with scroll-linked transforms, and fluid water background.
-4. **Resilient Ingestion API & Alert Engine**:
-   - `POST /api/v1/telemetry` with Device UID + SHA-256 API token verification, Zod schema range validation, deduplication, cooldowns, and automatic recovery detection.
-5. **Real-Time Data Pipeline**:
-   - PostgreSQL database with Row Level Security (RLS) and Supabase Realtime WebSocket subscriptions for zero-refresh dashboard updates.
-6. **Excel (.xlsx) Export**:
-   - Direct export of stored telemetry records with frozen headers, formatted styling, and date presets (10-day, 30-day, custom range).
+AquaFlow is an environmental IoT telemetry web platform designed to ingest, validate, analyze, and visualize real-time water measurements from a physical ESP32 water-quality monitoring prototype. It features a Liquid Glass interface floating above a multi-layered water atmosphere with strict **zero-demo-data integrity**.
 
 ---
 
-## Application Structure
+## 1. Authoritative Hardware Pin Map (Single Source of Truth)
 
-```
-??? app/
-?   ??? api/v1/
-?   ?   ??? alerts/       # Deduplicated incident querying and patch actions
-?   ?   ??? devices/      # Device provisioning & SHA-256 token issuance
-?   ?   ??? export/       # Microsoft Excel (.xlsx) streaming endpoint
-?   ?   ??? telemetry/    # Secure ESP32 telemetry ingestion endpoint
-?   ?   ??? thresholds/   # Configurable water quality thresholds CRUD
-?   ??? auth/callback/    # Supabase OAuth session callback
-?   ??? dashboard/
-?   ?   ??? alerts/       # Real-time incident hub & resolution
-?   ?   ??? analytics/    # Statistical distributions from real database records
-?   ?   ??? devices/      # Device registry & API token manager
-?   ?   ??? hardware/     # ESP32 integration guide & ready-to-flash C++ sketch
-?   ?   ??? history/      # Digital Passbook chronological telemetry ledger
-?   ?   ??? live/         # Supabase Realtime WebSocket live feed
-?   ?   ??? reports/      # Excel export center
-?   ?   ??? sensors/      # Sensor matrix & hardware pin specifications
-?   ?   ??? settings/     # Threshold limits & offline timeout configuration
-?   ?   ??? layout.tsx    # Liquid Glass dashboard layout & navigation
-?   ?   ??? page.tsx      # Overview console answering 6 core system questions
-?   ??? login/            # Dedicated Liquid Glass Google Authentication
-?   ??? globals.css       # Liquid Glass design tokens & water atmosphere classes
-?   ??? layout.tsx        # Root HTML layout
-?   ??? page.tsx          # Scroll-driven landing page
-??? components/
-?   ??? charts/           # Empty-state aware SVG area charts
-?   ??? dashboard/        # SensorCard, RealtimeStatusBadge
-?   ??? landing/          # LandingPageStory, ArchitectureDiagram
-?   ??? layout/           # Floating Navbar, DashboardSidebar, NotificationCenter
-?   ??? ui/               # Badge, Button, Card, EmptyState, WaterBackground
-??? lib/
-?   ??? export/           # ExcelJS workbook generator
-?   ??? supabase/         # SSR & Admin Supabase clients + middleware
-?   ??? telemetry/        # Alert engine, Auth hashing, DO calculation, Zod validation
-?   ??? types/            # Database & IoT TypeScript schemas
-?   ??? utils/            # Styling & date formatting helpers
-??? supabase/
-    ??? schema.sql        # Complete PostgreSQL schema with RLS & Realtime
-```
+| Component | Interface | ESP32 Pin | Baud / Address | Operational Role |
+| :--- | :--- | :--- | :--- | :--- |
+| **pH Sensor (4-in-1 Module)** | **UART2** | **RX: GPIO16, TX: GPIO17** | 9600 Baud | Parses `PH:xx.xx` from UART stream (`MEASURED`) |
+| **Optical Turbidity Sensor** | **Analog ADC1** | **GPIO32** | 0–4095 ADC | Raw ADC integer; NTU requires physical calibration (`MEASURED`) |
+| **Water Level Sensor** | **Analog ADC1** | **GPIO34** | 0–4095 ADC | Raw ADC integer; % requires physical calibration (`MEASURED`) |
+| **Hall-Effect Flow Meter** | **Interrupt Pulse** | **GPIO27** | Hardware ISR | Counts raw pulses; L/min requires physical calibration (`MEASURED`) |
+| **16x2 Character LCD** | **I2C Bus** | **SDA: GPIO21, SCL: GPIO22** | `0x27` | Real-time local parameter display (`OUTPUT`) |
+| **Piezo Alarm Buzzer** | **Digital Output** | **GPIO25** | Active High | Audible alert on threshold breach (`OUTPUT`) |
+| **Accumulated Water Volume** | **Integration** | Derived from Flow | -- | Total liters aggregated over time intervals (`DERIVED`) |
+| **Dissolved Oxygen (DO)** | **Model Engine** | Backend Aeration Model | -- | Server-side model; null if uncalibrated (`CALCULATED`) |
+
+> [!IMPORTANT]
+> - GPIO34 is dedicated exclusively to the **Water Level Sensor** ADC.
+> - GPIO35 is completely deprecated and unused.
+> - pH is connected via **UART2 (GPIO16 RX / GPIO17 TX)**, not analog ADC.
+> - Raw ADC values will never be falsely labeled as NTU or % without valid calibration data.
 
 ---
 
-## Getting Started
+## 2. Telemetry Ingestion API Specification
 
-### 1. Prerequisites
-- Node.js `>= 18`
-- npm or pnpm or yarn
-- Supabase project (for authentication, PostgreSQL, and Realtime)
-
-### 2. Installation & Setup
-```bash
-# Install dependencies
-npm install
-
-# Copy environment variables
-cp .env.example .env.local
-```
-
-Configure your `.env.local`:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-secret-key
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### 3. Database Schema Setup
-Execute the SQL script in `supabase/schema.sql` within your Supabase SQL Editor. This initializes all tables, RLS policies, indexes, and Realtime publication channels.
-
-### 4. Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) to view the application.
-
-### 5. Production Build
-```bash
-npm run build
-npm run start
-```
-
----
-
-## ESP32 Telemetry API Specification
-
-### Endpoint
+### Ingestion Endpoint
 ```http
-POST /api/v1/telemetry
+POST /api/telemetry
 Content-Type: application/json
-x-device-key: wq_your_device_api_key
+x-device-key: wq_your_device_secret_token
 ```
 
-### Payload Structure
+### Telemetry JSON Payload Structure
 ```json
 {
-  "device_uid": "ESP32-NODE-01",
-  "timestamp": "2026-09-20T12:30:00Z",
-  "ph": 7.24,
-  "turbidity": 2.15,
-  "flow_rate": 4.80,
-  "total_flow": 125.60
+  "device_id": "PROD-NODE-01",
+  "timestamp": "2026-09-21T20:00:00Z",
+  "ph": 7.31,
+  "turbidity_raw": 820,
+  "turbidity_ntu": null,
+  "water_level_raw": 3810,
+  "water_level_percent": null,
+  "flow_pulses": 49,
+  "flow_lpm": null,
+  "accumulated_volume_liters": null,
+  "dissolved_oxygen_mg_l": null
 }
 ```
 
@@ -139,9 +57,59 @@ x-device-key: wq_your_device_api_key
   "success": true,
   "message": "Telemetry received",
   "reading_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-  "do_status": "Unavailable",
-  "alerts_evaluated": 0
+  "received_at": "2026-09-21T20:00:01.120Z",
+  "do_status": "Unavailable"
 }
+```
+
+---
+
+## 3. Microcontroller Firmware
+
+The complete, separate C++ Arduino sketch implementing the verified hardware configuration is located at:
+
+```
+firmware/esp32_water_monitor/esp32_water_monitor.ino
+```
+
+### Firmware Configuration Block:
+```cpp
+const char* WIFI_SSID     = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* API_URL       = "https://<your-vercel-domain>.vercel.app/api/telemetry";
+const char* DEVICE_ID     = "PROD-NODE-01";
+const char* DEVICE_API_KEY = "wq_YOUR_PROVISIONED_DEVICE_TOKEN";
+```
+
+---
+
+## 4. Physical End-To-End Verification Checklist
+
+1. **TEST 1**: ESP32 boots, LCD initializes on I2C (GPIO21/22, 0x27), buzzer beeps on GPIO25.
+2. **TEST 2**: ESP32 connects to 2.4GHz Wi-Fi and syncs UTC ISO time via NTP.
+3. **TEST 3**: ESP32 HardwareSerial2 reads UART2 on GPIO16/17 and parses `PH:7.31, W:1, L:74, T:59,`.
+4. **TEST 4**: ESP32 reads Turbidity raw ADC on GPIO32.
+5. **TEST 5**: ESP32 reads Water Level raw ADC on GPIO34.
+6. **TEST 6**: ESP32 counts Flow pulses via GPIO27 interrupt.
+7. **TEST 7**: ESP32 builds JSON payload and issues HTTPS POST to `/api/telemetry` every 10s.
+8. **TEST 8**: Vercel API validates payload schema and authenticates SHA-256 token.
+9. **TEST 9**: Supabase stores record in `telemetry` table.
+10. **TEST 10**: Website live dashboard receives Realtime WebSocket stream update without page refresh.
+11. **TEST 11**: Adjusting physical water sensor conditions reflects live on dashboard.
+
+---
+
+## 5. Development & Deployment
+
+```bash
+# Install dependencies
+npm install
+
+# Run Next.js development server
+npm run dev
+
+# Production build check
+npm run build
 ```
 
 ---

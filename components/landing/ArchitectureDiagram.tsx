@@ -8,26 +8,26 @@ export function ArchitectureDiagram() {
     {
       step: "01",
       title: "Real Sensors",
-      subtitle: "pH Probe, Turbidity Sensor, Hall-Effect Flow Meter",
+      subtitle: "pH (UART2), Turb (32), Lvl (34), Flow (27)",
       icon: Activity,
       color: "from-cyan-500 to-blue-600",
-      description: "Direct analog & pulse measurement of real water conditions in real-time.",
+      description: "Digital UART and analog ADC acquisition of real water parameters in real-time.",
     },
     {
       step: "02",
       title: "ESP32 Hardware",
-      subtitle: "Firmware Ingestion & Formatting",
+      subtitle: "Microcontroller Firmware",
       icon: Cpu,
       color: "from-blue-600 to-indigo-600",
-      description: "Samples analog voltages, computes flow pulse counts, and serializes ISO 8601 JSON packets.",
+      description: "Parses UART packets, digitizes ADC channels, tallies pulse interrupts, and serializes ISO 8601 JSON.",
     },
     {
       step: "03",
       title: "Secure Telemetry API",
-      subtitle: "POST /api/v1/telemetry",
+      subtitle: "POST /api/telemetry",
       icon: ShieldCheck,
       color: "from-indigo-600 to-purple-600",
-      description: "Authenticates Device UID and SHA-256 API token with strict Zod range validation.",
+      description: "Authenticates Device ID and SHA-256 API token with strict Zod range and type validation.",
     },
     {
       step: "04",
@@ -35,7 +35,7 @@ export function ArchitectureDiagram() {
       subtitle: "Supabase DB & RLS Security",
       icon: Database,
       color: "from-purple-600 to-pink-600",
-      description: "Stores real readings, evaluates threshold rules, executes DO model, and dedupes alerts.",
+      description: "Stores real readings in telemetry table, evaluates threshold rules, executes DO model, and dedupes alerts.",
     },
     {
       step: "05",
@@ -43,7 +43,7 @@ export function ArchitectureDiagram() {
       subtitle: "Supabase Realtime WebSocket",
       icon: LayoutDashboard,
       color: "from-pink-600 to-emerald-500",
-      description: "Zero-refresh telemetry stream, live SVG charting, and digital passbook ledger.",
+      description: "Zero-refresh telemetry stream, live SVG charting, hardware integrity diagnostics, and digital passbook.",
     },
   ];
 

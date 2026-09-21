@@ -75,7 +75,7 @@ export function LandingPageStory() {
           </h1>
 
           <p className="text-base sm:text-xl text-neutral-300 max-w-2xl mx-auto font-light leading-relaxed mb-10">
-            Monitor water quality, flow, and system health through a real-time connected monitoring system.
+            Monitor water quality, flow, level, and system health through a real-time connected physical monitoring prototype.
           </p>
 
           {/* Action Buttons */}
@@ -99,35 +99,44 @@ export function LandingPageStory() {
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
                 <span className="text-xs font-mono text-white font-semibold">PHYSICAL SENSOR ARRAY CHANNELS</span>
               </div>
-              <span className="text-xs font-mono text-cyan-300">ESP32 Secure Link</span>
+              <span className="text-xs font-mono text-cyan-300">ESP32 Hardware Pipeline</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4">
               <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase">MEASURED CHANNEL</span>
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase">MEASURED</span>
+                  <span className="text-[10px] font-mono text-emerald-400">UART2 (16/17)</span>
+                </div>
+                <p className="text-sm font-semibold text-white">pH Sensor</p>
+                <p className="text-xs text-neutral-400 mt-0.5">0.00 — 14.00 pH</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase">MEASURED</span>
+                  <span className="text-[10px] font-mono text-emerald-400">GPIO 32 ADC</span>
+                </div>
+                <p className="text-sm font-semibold text-white">Turbidity</p>
+                <p className="text-xs text-neutral-400 mt-0.5">Raw ADC / NTU</p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase">MEASURED</span>
                   <span className="text-[10px] font-mono text-emerald-400">GPIO 34 ADC</span>
                 </div>
-                <p className="text-sm font-semibold text-white">pH Glass Probe</p>
-                <p className="text-xs text-neutral-400 mt-0.5">Acidity &amp; Alkalinity (0-14 pH)</p>
+                <p className="text-sm font-semibold text-white">Water Level</p>
+                <p className="text-xs text-neutral-400 mt-0.5">Raw ADC / %</p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase">MEASURED CHANNEL</span>
-                  <span className="text-[10px] font-mono text-emerald-400">GPIO 35 ADC</span>
-                </div>
-                <p className="text-sm font-semibold text-white">Turbidity Sensor</p>
-                <p className="text-xs text-neutral-400 mt-0.5">Particulate Clarity (0-4000 NTU)</p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase">MEASURED + DERIVED</span>
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase">MEASURED</span>
                   <span className="text-[10px] font-mono text-emerald-400">GPIO 27 INT</span>
                 </div>
-                <p className="text-sm font-semibold text-white">Water Flow Meter</p>
-                <p className="text-xs text-neutral-400 mt-0.5">Instant Flow (L/min) + Total Vol (L)</p>
+                <p className="text-sm font-semibold text-white">Flow Meter</p>
+                <p className="text-xs text-neutral-400 mt-0.5">Pulses / L/min</p>
               </div>
             </div>
           </div>
@@ -149,7 +158,7 @@ export function LandingPageStory() {
             Every reading tells a story.
           </h2>
           <p className="text-neutral-300 text-base sm:text-lg max-w-2xl mx-auto font-light leading-relaxed">
-            From the microscopic clarity of drinking reservoirs to high-volume industrial pipelines, AquaFlow captures every physical fluid dynamic with scientific integrity.
+            From the clarity of drinking reservoirs to high-volume pipelines and vessel water depth, AquaFlow captures every physical fluid dynamic with scientific integrity.
           </p>
         </motion.div>
 
@@ -203,7 +212,7 @@ export function LandingPageStory() {
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-white">pH Value</h3>
-                    <p className="text-xs font-mono text-neutral-400">0.00 ? 14.00 pH</p>
+                    <p className="text-xs font-mono text-neutral-400">0.00 — 14.00 pH</p>
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
@@ -211,11 +220,11 @@ export function LandingPageStory() {
                 </span>
               </div>
               <p className="text-xs text-neutral-300 leading-relaxed mb-4">
-                Direct glass electrode potential measurement. Monitors water acidity and alkalinity with user-configurable warning and critical thresholds.
+                4-in-1 multi-sensor module communicating over UART2. ESP32 parses the PH field from packet ASCII streams.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between text-xs font-mono text-neutral-400">
-              <span>Sensor Interface: ADC1 (GPIO 34)</span>
+              <span>Sensor Interface: UART2 (RX16 / TX17, 9600 Baud)</span>
               <span className="text-cyan-300">Live Standby</span>
             </div>
           </Card>
@@ -230,7 +239,7 @@ export function LandingPageStory() {
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-white">Turbidity (Clarity)</h3>
-                    <p className="text-xs font-mono text-neutral-400">0 ? 4000 NTU</p>
+                    <p className="text-xs font-mono text-neutral-400">0 — 4095 ADC (0 — 4000 NTU)</p>
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
@@ -238,16 +247,43 @@ export function LandingPageStory() {
                 </span>
               </div>
               <p className="text-xs text-neutral-300 leading-relaxed mb-4">
-                Optical light-scattering detector measuring suspended particulate matter in water. Calibrated to detect sediment contamination instantly.
+                Optical light-scattering detector measuring suspended particulate matter in water. Connected to ESP32 ADC1 GPIO32.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between text-xs font-mono text-neutral-400">
-              <span>Sensor Interface: ADC1 (GPIO 35)</span>
+              <span>Sensor Interface: ADC1 (GPIO 32)</span>
               <span className="text-sky-300">Live Standby</span>
             </div>
           </Card>
 
-          {/* Parameter 3: Flow & Total Volume */}
+          {/* Parameter 3: Water Level */}
+          <Card className="p-6 flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+                    <Droplets className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-white">Water Level Sensor</h3>
+                    <p className="text-xs font-mono text-neutral-400">0 — 4095 ADC (0 — 100%)</p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+                  MEASURED
+                </span>
+              </div>
+              <p className="text-xs text-neutral-300 leading-relaxed mb-4">
+                Analog water depth probe connected to ESP32 ADC1 GPIO34. Measures liquid immersion depth.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between text-xs font-mono text-neutral-400">
+              <span>Sensor Interface: ADC1 (GPIO 34)</span>
+              <span className="text-indigo-300">Live Standby</span>
+            </div>
+          </Card>
+
+          {/* Parameter 4: Flow & Total Volume */}
           <Card id="flow" className="p-6 flex flex-col justify-between">
             <div>
               <div className="flex items-start justify-between mb-4">
@@ -257,7 +293,7 @@ export function LandingPageStory() {
                   </div>
                   <div>
                     <h3 className="text-base font-semibold text-white">Flow Rate &amp; Accumulated Volume</h3>
-                    <p className="text-xs font-mono text-neutral-400">L/min &amp; Liters</p>
+                    <p className="text-xs font-mono text-neutral-400">Pulses / L/min &amp; Liters</p>
                   </div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">
@@ -265,38 +301,12 @@ export function LandingPageStory() {
                 </span>
               </div>
               <p className="text-xs text-neutral-300 leading-relaxed mb-4">
-                Hall-effect turbine pulse integration. Tracks real-time fluid flow velocity, detects unexpected surge anomalies or dry pipe flow, and aggregates total consumed volume.
+                Hall-effect turbine pulse integration via GPIO27 interrupt. Tracks flow velocity and aggregates total consumed volume.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-black/40 border border-white/5 flex items-center justify-between text-xs font-mono text-neutral-400">
               <span>Sensor Interface: Interrupt (GPIO 27)</span>
               <span className="text-emerald-300">Live Standby</span>
-            </div>
-          </Card>
-
-          {/* Parameter 4: Calculated Dissolved Oxygen */}
-          <Card className="p-6 flex flex-col justify-between">
-            <div>
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-500/15 border border-purple-400/30 flex items-center justify-center text-purple-300">
-                    <Droplets className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-white">Calculated Dissolved Oxygen</h3>
-                    <p className="text-xs font-mono text-neutral-400">mg/L (Traceable Model)</p>
-                  </div>
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-400/30">
-                  CALCULATED
-                </span>
-              </div>
-              <p className="text-xs text-neutral-300 leading-relaxed mb-4">
-                Calculated strictly when a scientifically valid calculation model and required physical inputs are configured. Never presented as a physical sensor measurement.
-              </p>
-            </div>
-            <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/20 text-xs font-mono text-purple-300">
-              &ldquo;Dissolved oxygen calculation unavailable with current sensor inputs.&rdquo;
             </div>
           </Card>
         </div>
@@ -331,9 +341,9 @@ export function LandingPageStory() {
             {
               step: "02",
               title: "Physical Sensors",
-              sub: "pH, Turbidity, Flow",
+              sub: "pH (UART2), Turb (32), Lvl (34), Flow (27)",
               icon: Activity,
-              desc: "Analog voltages & pulse interrupts sampled continuously at hardware level.",
+              desc: "Digital UART and analog ADC channels sampled continuously at hardware level.",
             },
             {
               step: "03",
@@ -345,7 +355,7 @@ export function LandingPageStory() {
             {
               step: "04",
               title: "Secure API",
-              sub: "POST /api/v1/telemetry",
+              sub: "POST /api/telemetry",
               icon: ShieldCheck,
               desc: "Verifies SHA-256 API token, validates Zod ranges, and runs alert engine.",
             },

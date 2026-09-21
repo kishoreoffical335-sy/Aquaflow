@@ -30,7 +30,7 @@ export default function HistoricalDataPage() {
       setLoading(true);
       try {
         const supabase: any = createClient();
-        
+
         let start = new Date();
         if (filterPeriod === "today") {
           start.setHours(0, 0, 0, 0);
@@ -47,27 +47,14 @@ export default function HistoricalDataPage() {
         }
 
         let query = supabase
-          .from("sensor_readings")
-          .select(`
-            id,
-            recorded_at,
-            ph,
-            turbidity,
-            flow_rate,
-            total_flow,
-            dissolved_oxygen,
-            devices (
-              device_name,
-              device_uid,
-              status
-            )
-          `, { count: "exact" })
-          .gte("recorded_at", start.toISOString())
-          .order("recorded_at", { ascending: false })
+          .from("telemetry")
+          .select("*", { count: "exact" })
+          .gte("timestamp", start.toISOString())
+          .order("timestamp", { ascending: false })
           .range((page - 1) * pageSize, page * pageSize - 1);
 
         if (filterPeriod === "custom" && endDate) {
-          query = query.lte("recorded_at", new Date(endDate).toISOString());
+          query = query.lte("timestamp", new Date(endDate).toISOString());
         }
 
         const { data } = await query;
@@ -116,7 +103,17 @@ export default function HistoricalDataPage() {
                   : "text-neutral-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              {period === "today" ? "Today" : period === "24h" ? "Last 24 Hours" : period === "7d" ? "Last 7 Days" : period === "10d" ? "Last 10 Days" : period === "30d" ? "Last 30 Days" : "Custom Range"}
+              {period === "today"
+                ? "Today"
+                : period === "24h"
+                ? "Last 24 Hours"
+                : period === "7d"
+                ? "Last 7 Days"
+                : period === "10d"
+                ? "Last 10 Days"
+                : period === "30d"
+                ? "Last 30 Days"
+                : "Custom Range"}
             </button>
           ))}
         </div>
@@ -154,22 +151,23 @@ export default function HistoricalDataPage() {
             <table className="w-full text-left text-xs font-mono">
               <thead className="bg-white/[0.03] border-b border-white/10 text-neutral-400">
                 <tr>
-                  <th className="py-3 px-4">Date &amp; Time (Local)</th>
+                  <th className="py-3 px-4">Date &amp; Time</th>
                   <th className="py-3 px-4">Device</th>
-                  <th className="py-3 px-4">pH</th>
-                  <th className="py-3 px-4">Turbidity (NTU)</th>
-                  <th className="py-3 px-4">Flow Rate (L/min)</th>
-                  <th className="py-3 px-4">Total Flow (L)</th>
-                  <th className="py-3 px-4">Calculated DO (mg/L)</th>
+                  <th className="py-3 px-4">pH (UART2)</th>
+                  <th className="py-3 px-4">Turbidity (GPIO32)</th>
+                  <th className="py-3 px-4">Water Level (GPIO34)</th>
+                  <th className="py-3 px-4">Flow (GPIO27)</th>
+                  <th className="py-3 px-4">Total Vol (L)</th>
+                  <th className="py-3 px-4">Calculated DO</th>
                   <th className="py-3 px-4">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5 text-neutral-300">
                 {records.map((row: any) => {
-                  const { date, time } = formatDateTime(row.recorded_at);
+                  const { date, time } = formatDateTime(row.timestamp || row.received_at);
                   const isAbnormal =
                     (row.ph !== null && (row.ph < 6.5 || row.ph > 8.5)) ||
-                    (row.turbidity !== null && row.turbidity > 5.0);
+                    (row.turbidity_ntu !== null && row.turbidity_ntu > 5.0);
 
                   return (
                     <tr key={row.id} className="hover:bg-white/[0.02] transition-colors">
@@ -179,26 +177,29 @@ export default function HistoricalDataPage() {
                       </td>
                       <td className="py-3 px-4">
                         <span className="text-white block font-sans font-medium">
-                          {row.devices?.device_name || "ESP32 Node"}
-                        </span>
-                        <span className="text-neutral-400 text-[10px]">
-                          {row.devices?.device_uid || "--"}
+                          {row.device_id || "PROD-NODE-01"}
                         </span>
                       </td>
                       <td className="py-3 px-4 font-semibold text-cyan-400">
                         {row.ph !== null ? Number(row.ph).toFixed(2) : "--"}
                       </td>
                       <td className="py-3 px-4 text-sky-300">
-                        {row.turbidity !== null ? Number(row.turbidity).toFixed(2) : "--"}
+                        {row.turbidity_raw !== null ? `${row.turbidity_raw} ADC` : "--"}
+                        {row.turbidity_ntu !== null ? ` (${Number(row.turbidity_ntu).toFixed(1)} NTU)` : ""}
+                      </td>
+                      <td className="py-3 px-4 text-indigo-300">
+                        {row.water_level_raw !== null ? `${row.water_level_raw} ADC` : "--"}
+                        {row.water_level_percent !== null ? ` (${Number(row.water_level_percent).toFixed(1)}%)` : ""}
                       </td>
                       <td className="py-3 px-4 text-emerald-400">
-                        {row.flow_rate !== null ? Number(row.flow_rate).toFixed(2) : "--"}
+                        {row.flow_pulses !== null ? `${row.flow_pulses} pls` : "--"}
+                        {row.flow_lpm !== null ? ` (${Number(row.flow_lpm).toFixed(1)} L/m)` : ""}
                       </td>
                       <td className="py-3 px-4 text-blue-400">
-                        {row.total_flow !== null ? Number(row.total_flow).toFixed(1) : "--"}
+                        {row.accumulated_volume_liters !== null ? Number(row.accumulated_volume_liters).toFixed(1) : "--"}
                       </td>
                       <td className="py-3 px-4 text-purple-400">
-                        {row.dissolved_oxygen !== null ? Number(row.dissolved_oxygen).toFixed(2) : "--"}
+                        {row.dissolved_oxygen_mg_l !== null ? Number(row.dissolved_oxygen_mg_l).toFixed(2) : "--"}
                       </td>
                       <td className="py-3 px-4">
                         <span

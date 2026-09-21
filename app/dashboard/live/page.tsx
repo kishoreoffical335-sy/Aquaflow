@@ -17,18 +17,18 @@ export default function LiveMonitoringPage() {
   useEffect(() => {
     const supabase: any = createClient();
 
-    // 1. Initial fetch of latest readings (up to 30)
+    // 1. Initial fetch of latest telemetry rows (up to 30)
     async function loadInitialReadings() {
       const { data } = await supabase
-        .from("sensor_readings")
+        .from("telemetry")
         .select("*")
-        .order("recorded_at", { ascending: false })
+        .order("timestamp", { ascending: false })
         .limit(30);
 
       if (data && data.length > 0) {
         setReadings(data.reverse());
         setDeviceStatus("online");
-        setLastPacketTime(data[data.length - 1].recorded_at);
+        setLastPacketTime(data[data.length - 1].timestamp || data[data.length - 1].received_at);
       }
     }
     loadInitialReadings();
@@ -38,12 +38,12 @@ export default function LiveMonitoringPage() {
       .channel("live_telemetry_feed")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "sensor_readings" },
+        { event: "INSERT", schema: "public", table: "telemetry" },
         (payload: any) => {
-          const newReading = (payload as any).new;
+          const newReading = payload.new;
           setReadings((prev) => [...prev.slice(-49), newReading]);
           setDeviceStatus("online");
-          setLastPacketTime(newReading.recorded_at);
+          setLastPacketTime(newReading.timestamp || newReading.received_at);
         }
       )
       .subscribe();
@@ -54,15 +54,15 @@ export default function LiveMonitoringPage() {
   }, []);
 
   const chartData = readings.map((r: any) => {
-    const { time } = formatDateTime(r.recorded_at);
+    const { time } = formatDateTime(r.timestamp);
     return {
-      recorded_at: r.recorded_at,
+      recorded_at: r.timestamp,
       timeLabel: time,
       ph: r.ph !== null ? Number(r.ph) : null,
-      turbidity: r.turbidity !== null ? Number(r.turbidity) : null,
-      flow_rate: r.flow_rate !== null ? Number(r.flow_rate) : null,
-      total_flow: r.total_flow !== null ? Number(r.total_flow) : null,
-      dissolved_oxygen: r.dissolved_oxygen !== null ? Number(r.dissolved_oxygen) : null,
+      turbidity: r.turbidity_ntu !== null ? Number(r.turbidity_ntu) : (r.turbidity_raw !== null ? Number(r.turbidity_raw) : null),
+      flow_rate: r.flow_lpm !== null ? Number(r.flow_lpm) : (r.flow_pulses !== null ? Number(r.flow_pulses) : null),
+      total_flow: r.accumulated_volume_liters !== null ? Number(r.accumulated_volume_liters) : null,
+      dissolved_oxygen: r.dissolved_oxygen_mg_l !== null ? Number(r.dissolved_oxygen_mg_l) : null,
     };
   });
 
@@ -109,7 +109,7 @@ export default function LiveMonitoringPage() {
           description="The dashboard is actively listening for incoming ESP32 packets. Connect your hardware to start live charts."
           badgeText="Realtime WebSocket Active"
           actionText="View Hardware Connection Guide"
-          onAction={() => window.location.href = "/dashboard/hardware"}
+          onAction={() => (window.location.href = "/dashboard/hardware")}
         />
       ) : (
         <div className="space-y-8">
@@ -145,22 +145,39 @@ export default function LiveMonitoringPage() {
                 <thead>
                   <tr className="border-b border-white/10 text-neutral-400 pb-2">
                     <th className="py-2">Time (UTC)</th>
-                    <th>pH</th>
-                    <th>Turbidity (NTU)</th>
-                    <th>Flow (L/min)</th>
-                    <th>Total Flow (L)</th>
+                    <th>Device</th>
+                    <th>pH (UART2)</th>
+                    <th>Turbidity (Raw ADC / NTU)</th>
+                    <th>Water Level (Raw ADC / %)</th>
+                    <th>Flow (Pulses / LPM)</th>
+                    <th>Total Vol (L)</th>
                     <th>Calculated DO</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-neutral-300">
                   {readings.slice(-10).reverse().map((row, idx) => (
                     <tr key={idx} className="hover:bg-white/[0.02]">
-                      <td className="py-2.5 text-neutral-400">{row.recorded_at}</td>
-                      <td className="text-cyan-400 font-semibold">{row.ph?.toFixed(2) ?? "--"}</td>
-                      <td className="text-sky-300">{row.turbidity?.toFixed(2) ?? "--"}</td>
-                      <td className="text-emerald-400">{row.flow_rate?.toFixed(2) ?? "--"}</td>
-                      <td className="text-blue-400">{row.total_flow?.toFixed(1) ?? "--"}</td>
-                      <td className="text-purple-400">{row.dissolved_oxygen?.toFixed(2) ?? "--"}</td>
+                      <td className="py-2.5 text-neutral-400">{row.timestamp || row.received_at}</td>
+                      <td className="text-white font-sans">{row.device_id || "PROD-NODE-01"}</td>
+                      <td className="text-cyan-400 font-semibold">{row.ph !== null ? row.ph.toFixed(2) : "--"}</td>
+                      <td className="text-sky-300">
+                        {row.turbidity_raw !== null ? `${row.turbidity_raw} ADC` : "--"}
+                        {row.turbidity_ntu !== null ? ` (${row.turbidity_ntu.toFixed(1)} NTU)` : ""}
+                      </td>
+                      <td className="text-indigo-300">
+                        {row.water_level_raw !== null ? `${row.water_level_raw} ADC` : "--"}
+                        {row.water_level_percent !== null ? ` (${row.water_level_percent.toFixed(1)}%)` : ""}
+                      </td>
+                      <td className="text-emerald-400">
+                        {row.flow_pulses !== null ? `${row.flow_pulses} pls` : "--"}
+                        {row.flow_lpm !== null ? ` (${row.flow_lpm.toFixed(1)} L/m)` : ""}
+                      </td>
+                      <td className="text-blue-400">
+                        {row.accumulated_volume_liters !== null ? row.accumulated_volume_liters.toFixed(1) : "--"}
+                      </td>
+                      <td className="text-purple-400">
+                        {row.dissolved_oxygen_mg_l !== null ? row.dissolved_oxygen_mg_l.toFixed(2) : "--"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

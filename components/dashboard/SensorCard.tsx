@@ -1,7 +1,18 @@
 "use client";
 
 import React from "react";
-import { Activity, ArrowDownRight, ArrowUpRight, Minus, Droplets, Waves, Gauge, FlaskConical, Info } from "lucide-react";
+import {
+  Activity,
+  ArrowDownRight,
+  ArrowUpRight,
+  Minus,
+  Droplets,
+  Waves,
+  Gauge,
+  FlaskConical,
+  Info,
+  Sliders,
+} from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { MeasurementType, SensorType } from "@/lib/types/iot.types";
 import { cn } from "@/lib/utils/cn";
@@ -9,8 +20,10 @@ import { cn } from "@/lib/utils/cn";
 interface SensorCardProps {
   type: SensorType;
   title: string;
-  value: number | null;
+  rawValue?: number | null;
+  calibratedValue?: number | null;
   unit: string;
+  rawUnit?: string;
   measurementType: MeasurementType;
   status?: "normal" | "warning" | "critical" | "offline" | "unavailable";
   targetRange?: string;
@@ -18,11 +31,14 @@ interface SensorCardProps {
   trend?: "up" | "down" | "stable";
   calculatedExplanation?: string;
   isDOUnavailable?: boolean;
+  requiresCalibration?: boolean;
+  calibrationNote?: string;
 }
 
 const iconMap = {
   ph: FlaskConical,
   turbidity: Waves,
+  water_level: Droplets,
   flow_rate: Gauge,
   total_flow: Droplets,
   dissolved_oxygen: Activity,
@@ -31,8 +47,10 @@ const iconMap = {
 export function SensorCard({
   type,
   title,
-  value,
+  rawValue,
+  calibratedValue,
   unit,
+  rawUnit = "Raw ADC",
   measurementType,
   status = "normal",
   targetRange,
@@ -40,6 +58,8 @@ export function SensorCard({
   trend = "stable",
   calculatedExplanation,
   isDOUnavailable = false,
+  requiresCalibration = false,
+  calibrationNote,
 }: SensorCardProps) {
   const Icon = iconMap[type] || Activity;
 
@@ -51,7 +71,8 @@ export function SensorCard({
     unavailable: "text-purple-300 bg-purple-500/10 border-purple-500/30",
   };
 
-  const hasData = value !== null && value !== undefined && !isDOUnavailable;
+  const hasCalibratedData = calibratedValue !== null && calibratedValue !== undefined && !isDOUnavailable;
+  const hasRawData = rawValue !== null && rawValue !== undefined;
 
   return (
     <Card hoverable className="flex flex-col justify-between relative overflow-hidden group">
@@ -68,24 +89,24 @@ export function SensorCard({
             <div>
               <h3 className="text-sm font-semibold text-white tracking-tight">{title}</h3>
               {targetRange && (
-                <p className="text-[11px] text-neutral-400 font-mono">Target: {targetRange}</p>
+                <p className="text-[11px] text-neutral-400 font-mono">Range: {targetRange}</p>
               )}
             </div>
           </div>
-          
+
           <div className="flex flex-col items-end gap-1">
             {measurementType === "MEASURED" && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
                 MEASURED
               </span>
             )}
             {measurementType === "DERIVED" && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/15 text-blue-300 border border-blue-400/30">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/15 text-blue-300 border border-blue-400/30">
                 DERIVED
               </span>
             )}
             {measurementType === "CALCULATED" && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-400/30">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-400/30">
                 CALCULATED
               </span>
             )}
@@ -94,12 +115,18 @@ export function SensorCard({
 
         {/* Value Display */}
         <div className="my-3">
-          {hasData ? (
+          {hasCalibratedData ? (
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-bold tracking-tight text-white font-mono">
-                {value.toFixed(value < 10 && type === "ph" ? 2 : 1)}
+                {calibratedValue.toFixed(calibratedValue < 10 && type === "ph" ? 2 : 1)}
               </span>
               <span className="text-sm font-medium text-cyan-300 font-mono">{unit}</span>
+
+              {hasRawData && (
+                <span className="text-[11px] font-mono text-neutral-400 ml-1">
+                  ({rawValue} {rawUnit})
+                </span>
+              )}
 
               {trend === "up" && (
                 <span className="flex items-center text-xs font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
@@ -115,6 +142,23 @@ export function SensorCard({
                 <span className="flex items-center text-xs font-mono text-neutral-400 bg-white/5 px-1.5 py-0.5 rounded">
                   <Minus className="w-3 h-3" />
                 </span>
+              )}
+            </div>
+          ) : hasRawData ? (
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold tracking-tight text-white font-mono">
+                  {rawValue}
+                </span>
+                <span className="text-xs font-medium text-neutral-400 font-mono">{rawUnit}</span>
+              </div>
+              {requiresCalibration && (
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1">
+                    <Sliders className="w-2.5 h-2.5" />
+                    Calibration Required for {unit}
+                  </span>
+                </div>
               )}
             </div>
           ) : isDOUnavailable || type === "dissolved_oxygen" ? (
@@ -135,7 +179,7 @@ export function SensorCard({
           )}
         </div>
 
-        {type === "dissolved_oxygen" && calculatedExplanation && hasData && (
+        {type === "dissolved_oxygen" && calculatedExplanation && hasCalibratedData && (
           <div className="mt-2 p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/30 text-[11px] text-purple-200/90 leading-snug">
             {calculatedExplanation}
           </div>
@@ -145,14 +189,24 @@ export function SensorCard({
       {/* Footer Info */}
       <div className="pt-3.5 mt-3.5 border-t border-white/10 flex items-center justify-between text-xs text-neutral-400">
         <div className="flex items-center gap-1.5">
-          <span className={cn("w-2 h-2 rounded-full", hasData ? "bg-cyan-400 animate-pulse" : "bg-neutral-600")} />
+          <span
+            className={cn(
+              "w-2 h-2 rounded-full",
+              hasRawData || hasCalibratedData ? "bg-cyan-400 animate-pulse" : "bg-neutral-600"
+            )}
+          />
           <span className="font-mono text-[11px]">
-            {lastUpdated ? `Updated ${lastUpdated}` : "No packets received"}
+            {lastUpdated ? `Updated ${lastUpdated}` : "No telemetry received"}
           </span>
         </div>
-        
-        {hasData && (
-          <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold border", statusColors[status])}>
+
+        {(hasCalibratedData || hasRawData) && (
+          <span
+            className={cn(
+              "px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold border",
+              statusColors[status]
+            )}
+          >
             {status}
           </span>
         )}

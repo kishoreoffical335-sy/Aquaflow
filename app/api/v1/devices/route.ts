@@ -14,7 +14,7 @@ export async function GET() {
 
   const { data: devices, error } = await supabase
     .from("devices")
-    .select("id, device_name, device_uid, status, last_seen_at, firmware_version, created_at")
+    .select("id, device_name, device_id, device_uid, status, last_seen, last_seen_at, firmware_version, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -22,7 +22,15 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ devices: devices || [] });
+  // Normalize device_id and last_seen
+  const normalized = (devices || []).map((d: any) => ({
+    ...d,
+    device_id: d.device_id || d.device_uid,
+    device_uid: d.device_uid || d.device_id,
+    last_seen_at: d.last_seen || d.last_seen_at,
+  }));
+
+  return NextResponse.json({ devices: normalized });
 }
 
 export async function POST(req: NextRequest) {
@@ -34,9 +42,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { device_name, device_uid } = await req.json();
-    if (!device_name || !device_uid) {
-      return NextResponse.json({ error: "device_name and device_uid are required" }, { status: 400 });
+    const body = await req.json();
+    const deviceName = body.device_name;
+    const deviceId = (body.device_id || body.device_uid || "PROD-NODE-01").trim().toUpperCase();
+
+    if (!deviceName) {
+      return NextResponse.json({ error: "device_name is required" }, { status: 400 });
     }
 
     const { apiKey, keyHash } = generateDeviceApiKey();
@@ -45,8 +56,9 @@ export async function POST(req: NextRequest) {
       .from("devices")
       .insert({
         user_id: user.id,
-        device_name,
-        device_uid: device_uid.trim().toUpperCase(),
+        device_name: deviceName,
+        device_id: deviceId,
+        device_uid: deviceId,
         api_key_hash: keyHash,
         status: "offline",
       })
@@ -61,7 +73,7 @@ export async function POST(req: NextRequest) {
       {
         device_id: device.id,
         sensor_type: "ph",
-        sensor_name: "pH Probe",
+        sensor_name: "pH 4-in-1 UART Module",
         unit: "pH",
         measurement_type: "MEASURED",
         status: "active",
@@ -69,16 +81,24 @@ export async function POST(req: NextRequest) {
       {
         device_id: device.id,
         sensor_type: "turbidity",
-        sensor_name: "Turbidity Sensor",
-        unit: "NTU",
+        sensor_name: "Optical Turbidity Sensor (GPIO32)",
+        unit: "Raw ADC / NTU",
+        measurement_type: "MEASURED",
+        status: "active",
+      },
+      {
+        device_id: device.id,
+        sensor_type: "water_level",
+        sensor_name: "Water Level Sensor (GPIO34)",
+        unit: "Raw ADC / %",
         measurement_type: "MEASURED",
         status: "active",
       },
       {
         device_id: device.id,
         sensor_type: "flow_rate",
-        sensor_name: "Hall-Effect Flow Meter",
-        unit: "L/min",
+        sensor_name: "Hall-Effect Flow Meter (GPIO27)",
+        unit: "Pulses / L/min",
         measurement_type: "MEASURED",
         status: "active",
       },
@@ -86,7 +106,7 @@ export async function POST(req: NextRequest) {
         device_id: device.id,
         sensor_type: "total_flow",
         sensor_name: "Accumulated Water Volume",
-        unit: "L",
+        unit: "Liters",
         measurement_type: "DERIVED",
         status: "active",
       },

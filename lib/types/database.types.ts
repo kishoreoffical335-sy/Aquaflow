@@ -43,9 +43,11 @@ export interface Database {
           id: string;
           user_id: string;
           device_name: string;
-          device_uid: string;
+          device_id: string;
+          device_uid: string; // compatibility alias
           api_key_hash: string;
           status: "online" | "offline" | "warning" | "fault";
+          last_seen: string | null;
           last_seen_at: string | null;
           firmware_version: string;
           offline_timeout_seconds: number;
@@ -57,9 +59,11 @@ export interface Database {
           id?: string;
           user_id: string;
           device_name: string;
-          device_uid: string;
+          device_id?: string;
+          device_uid?: string;
           api_key_hash: string;
           status?: "online" | "offline" | "warning" | "fault";
+          last_seen?: string | null;
           last_seen_at?: string | null;
           firmware_version?: string;
           offline_timeout_seconds?: number;
@@ -71,9 +75,11 @@ export interface Database {
           id?: string;
           user_id?: string;
           device_name?: string;
+          device_id?: string;
           device_uid?: string;
           api_key_hash?: string;
           status?: "online" | "offline" | "warning" | "fault";
+          last_seen?: string | null;
           last_seen_at?: string | null;
           firmware_version?: string;
           offline_timeout_seconds?: number;
@@ -82,46 +88,87 @@ export interface Database {
           updated_at?: string;
         };
       };
-      sensors: {
+      telemetry: {
         Row: {
           id: string;
           device_id: string;
-          sensor_type: "ph" | "turbidity" | "flow_rate" | "total_flow" | "dissolved_oxygen";
-          sensor_name: string;
-          unit: string;
-          measurement_type: "MEASURED" | "DERIVED" | "CALCULATED";
-          status: "active" | "calibrating" | "fault" | "disabled";
-          enabled: boolean;
-          calculation_model: string | null;
-          metadata: Json | null;
+          timestamp: string;
+          ph: number | null;
+          turbidity_raw: number | null;
+          turbidity_ntu: number | null;
+          water_level_raw: number | null;
+          water_level_percent: number | null;
+          flow_pulses: number | null;
+          flow_lpm: number | null;
+          accumulated_volume_liters: number | null;
+          dissolved_oxygen_mg_l: number | null;
+          received_at: string;
+          raw_payload: Json | null;
+        };
+        Insert: {
+          id?: string;
+          device_id: string;
+          timestamp: string;
+          ph?: number | null;
+          turbidity_raw?: number | null;
+          turbidity_ntu?: number | null;
+          water_level_raw?: number | null;
+          water_level_percent?: number | null;
+          flow_pulses?: number | null;
+          flow_lpm?: number | null;
+          accumulated_volume_liters?: number | null;
+          dissolved_oxygen_mg_l?: number | null;
+          received_at?: string;
+          raw_payload?: Json | null;
+        };
+        Update: {
+          id?: string;
+          device_id?: string;
+          timestamp?: string;
+          ph?: number | null;
+          turbidity_raw?: number | null;
+          turbidity_ntu?: number | null;
+          water_level_raw?: number | null;
+          water_level_percent?: number | null;
+          flow_pulses?: number | null;
+          flow_lpm?: number | null;
+          accumulated_volume_liters?: number | null;
+          dissolved_oxygen_mg_l?: number | null;
+          received_at?: string;
+          raw_payload?: Json | null;
+        };
+      };
+      calibrations: {
+        Row: {
+          id: string;
+          device_id: string;
+          sensor: "ph" | "turbidity" | "water_level" | "flow";
+          calibration_data: Json;
+          calibration_status: "UNCALIBRATED" | "CALIBRATED" | "CALIBRATION_REQUIRED";
+          calibrated_at: string | null;
+          version: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           device_id: string;
-          sensor_type: "ph" | "turbidity" | "flow_rate" | "total_flow" | "dissolved_oxygen";
-          sensor_name: string;
-          unit: string;
-          measurement_type: "MEASURED" | "DERIVED" | "CALCULATED";
-          status?: "active" | "calibrating" | "fault" | "disabled";
-          enabled?: boolean;
-          calculation_model?: string | null;
-          metadata?: Json | null;
+          sensor: "ph" | "turbidity" | "water_level" | "flow";
+          calibration_data?: Json;
+          calibration_status?: "UNCALIBRATED" | "CALIBRATED" | "CALIBRATION_REQUIRED";
+          calibrated_at?: string | null;
+          version?: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           device_id?: string;
-          sensor_type?: "ph" | "turbidity" | "flow_rate" | "total_flow" | "dissolved_oxygen";
-          sensor_name?: string;
-          unit?: string;
-          measurement_type?: "MEASURED" | "DERIVED" | "CALCULATED";
-          status?: "active" | "calibrating" | "fault" | "disabled";
-          enabled?: boolean;
-          calculation_model?: string | null;
-          metadata?: Json | null;
+          sensor?: "ph" | "turbidity" | "water_level" | "flow";
+          calibration_data?: Json;
+          calibration_status?: "UNCALIBRATED" | "CALIBRATED" | "CALIBRATION_REQUIRED";
+          calibrated_at?: string | null;
+          version?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -171,7 +218,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          parameter: "ph" | "turbidity" | "flow_rate" | "dissolved_oxygen";
+          parameter: "ph" | "turbidity" | "water_level" | "flow_rate" | "dissolved_oxygen";
           minimum_value: number;
           maximum_value: number;
           warning_low: number | null;
@@ -187,7 +234,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
-          parameter: "ph" | "turbidity" | "flow_rate" | "dissolved_oxygen";
+          parameter: "ph" | "turbidity" | "water_level" | "flow_rate" | "dissolved_oxygen";
           minimum_value: number;
           maximum_value: number;
           warning_low?: number | null;
@@ -203,7 +250,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
-          parameter?: "ph" | "turbidity" | "flow_rate" | "dissolved_oxygen";
+          parameter?: "ph" | "turbidity" | "water_level" | "flow_rate" | "dissolved_oxygen";
           minimum_value?: number;
           maximum_value?: number;
           warning_low?: number | null;
