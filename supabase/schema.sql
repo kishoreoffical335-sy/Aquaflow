@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.devices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     device_name TEXT NOT NULL,
     device_id TEXT UNIQUE NOT NULL,
     device_uid TEXT, -- Backwards compatibility alias
@@ -245,21 +245,23 @@ CREATE POLICY "Users can view own profile" ON public.profiles
 CREATE POLICY "Users can update own profile" ON public.profiles
     FOR UPDATE USING (auth.uid() = id);
 
--- Devices: users manage their own devices
-CREATE POLICY "Users can view own devices" ON public.devices
-    FOR SELECT USING (auth.uid() = user_id);
+-- Devices: users and operators can view and manage devices
+CREATE POLICY "Allow service role full access to devices" ON public.devices
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Users can view devices" ON public.devices
+    FOR SELECT USING (true);
 CREATE POLICY "Users can insert own devices" ON public.devices
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+    FOR INSERT WITH CHECK (auth.uid() = user_id OR user_id IS NULL OR auth.uid() IS NULL);
 CREATE POLICY "Users can update own devices" ON public.devices
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING (auth.uid() = user_id OR user_id IS NULL OR auth.uid() IS NULL);
 CREATE POLICY "Users can delete own devices" ON public.devices
-    FOR DELETE USING (auth.uid() = user_id);
+    FOR DELETE USING (auth.uid() = user_id OR user_id IS NULL OR auth.uid() IS NULL);
 
--- Telemetry: users can view telemetry belonging to their devices
+-- Telemetry: viewable by authenticated users and operators
+CREATE POLICY "Allow service role full access to telemetry" ON public.telemetry
+    FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "Users can view telemetry" ON public.telemetry
-    FOR SELECT USING (EXISTS (
-        SELECT 1 FROM public.devices WHERE devices.device_id = telemetry.device_id AND devices.user_id = auth.uid()
-    ));
+    FOR SELECT USING (true);
 
 -- Calibrations: users can view and update calibrations for their devices
 CREATE POLICY "Users can view calibrations" ON public.calibrations

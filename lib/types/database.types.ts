@@ -41,7 +41,7 @@ export interface Database {
       devices: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
           device_name: string;
           device_id: string;
           device_uid: string; // compatibility alias
@@ -57,7 +57,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          user_id: string;
+          user_id?: string | null;
           device_name: string;
           device_id?: string;
           device_uid?: string;
@@ -73,7 +73,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          user_id?: string;
+          user_id?: string | null;
           device_name?: string;
           device_id?: string;
           device_uid?: string;
