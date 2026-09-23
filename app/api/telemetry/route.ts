@@ -105,28 +105,8 @@ export async function POST(req: NextRequest) {
 
     // 4. Store in Authoritative Telemetry Table
     const { data: telemetryRow, error: insertErr } = await supabase
-      .from("telemetry")
+      .from("sensor_readings")
       .insert({
-        device_id: deviceId,
-        timestamp: payload.timestamp,
-        ph: phVal,
-        turbidity_raw: turbidityRaw,
-        turbidity_ntu: turbidityNtu,
-        water_level_raw: waterLevelRaw,
-        water_level_percent: waterLevelPercent,
-        flow_pulses: flowPulses,
-        flow_lpm: flowLpm,
-        accumulated_volume_liters: accVolume,
-        dissolved_oxygen_mg_l: doValue,
-        received_at: receivedAt,
-        raw_payload: payload as any,
-      })
-      .select("id")
-      .single();
-
-    // Also sync to legacy sensor_readings for table backwards compatibility if present
-    try {
-      await supabase.from("sensor_readings").insert({
         device_id: device.id,
         recorded_at: payload.timestamp,
         ph: phVal,
@@ -136,15 +116,18 @@ export async function POST(req: NextRequest) {
         dissolved_oxygen: doValue,
         do_calculation_meta: doResult as any,
         raw_payload: payload as any,
-      });
-    } catch {
-      // Non-blocking sync
-    }
+      })
+      .select("id")
+      .single();
 
     if (insertErr) {
       console.error("Telemetry insert error:", insertErr);
       return NextResponse.json(
-        { success: false, message: "Database error storing telemetry record" },
+        {
+          success: false,
+          message: "Database error storing telemetry record",
+          error: insertErr.message,
+        },
         { status: 500 }
       );
     }
